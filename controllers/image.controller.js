@@ -1,0 +1,188 @@
+const { LearningItem, Category, User, Pronunciation } = require("../model");
+const HttpStatus = require("../enums/httpStatusCode.enum");
+
+const itemController = {};
+
+// Create a new learning item with image and voice
+itemController.createItem = async (req, res) => {
+  try {
+    // Accept flexible field names from the client:
+    // category (or categoryName), name (or itemName), photo (or image), voice (or record)
+    const categoryName = req.body.category || req.body.categoryName;
+    const itemName = req.body.name || req.body.itemName;
+    const description = req.body.description || null;
+    const userId = req.user && req.user.id;
+
+    // Validate inputs
+    if (!categoryName || !itemName) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        success: false,
+        message: 'Both `category` and `name` fields are required'
+      });
+    }
+
+    // Resolve or create category by name (case-insensitive)
+    let category = await Category.findOne({ where: { name: categoryName } });
+    if (!category) {
+      category = await Category.create({ name: categoryName });
+    }
+
+    // Support multiple upload field names for photo and voice
+    const files = req.files || {};
+    const photoFiles = files.photo || files.image || files.photoImage || null;
+    const voiceFiles = files.voice || files.record || files.audio || null;
+
+    // Photo is required
+    if (!photoFiles || (Array.isArray(photoFiles) && photoFiles.length === 0)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        success: false,
+        message: 'Photo file is required (field name: `photo` or `image`)'
+      });
+    }
+
+    // Build URLs from uploaded files (use first file if array)
+    const imageFile = Array.isArray(photoFiles) ? photoFiles[0] : photoFiles;
+    const imageUrl = `/uploads/images/${imageFile.filename}`;
+
+    let voiceUrl = null;
+    if (voiceFiles && (Array.isArray(voiceFiles) ? voiceFiles.length > 0 : true)) {
+      const voiceFile = Array.isArray(voiceFiles) ? voiceFiles[0] : voiceFiles;
+      voiceUrl = `/uploads/voice/${voiceFile.filename}`;
+    }
+
+    // Create learning item
+    const newItem = await LearningItem.create({
+      userId: userId || null,
+      categoryId: category.id,
+      itemName,
+      imageUrl,
+      voiceUrl,
+      description
+    });
+
+    // Fetch the created item with associations
+    const item = await LearningItem.findByPk(newItem.id, {
+      include: [
+        { model: Category, as: 'category', attributes: ['id', 'name'] },
+        { model: User, as: 'user', attributes: ['id', 'childName'] }
+      ]
+    });
+
+    return res.status(HttpStatus.CREATED).json({
+      success: true,
+      message: 'Learning item created successfully',
+      data: item
+    });
+  } catch (error) {
+    console.error('Create item error:', error);
+    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Failed to create learning item',
+      error: error.message
+    });
+  }
+};
+
+// Get all items for a category
+itemController.getItemsByCategory = async (req, res) => {
+  try {
+    const { categoryId } = req.params;
+
+    // Validate category exists
+    const category = await Category.findByPk(categoryId);
+    if (!category) {
+      return res.status(HttpStatus.NOT_FOUND).json({
+        success: false,
+        message: 'Category not found'
+      });
+    }
+
+    // Get all items in this category
+    const items = await LearningItem.findAll({
+      where: { categoryId },
+      include: [
+        { model: Category, as: 'category', attributes: ['id', 'name'] },
+        { model: User, as: 'user', attributes: ['id', 'childName'] }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+    return res.status(HttpStatus.OK).json({
+      success: true,
+      message: 'Items retrieved successfully',
+      data: items
+    });
+  } catch (error) {
+    console.error('Get items error:', error);
+    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Failed to retrieve items',
+      error: error.message
+    });
+  }
+};
+
+// Get my items
+itemController.getMyItems = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const items = await LearningItem.findAll({
+      where: { userId },
+      include: [
+        { model: Category, as: 'category', attributes: ['id', 'name'] }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+    return res.status(HttpStatus.OK).json({
+      success: true,
+      message: 'Your items retrieved successfully',
+      data: items
+    });
+  } catch (error) {
+    console.error('Get my items error:', error);
+    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Failed to retrieve your items',
+      error: error.message
+    });
+  }
+};
+
+// Get single item details
+itemController.getItemById = async (req, res) => {
+  try {
+    const { itemId } = req.params;
+
+    const item = await LearningItem.findByPk(itemId, {
+      include: [
+        { model: Category, as: 'category', attributes: ['id', 'name'] },
+        { model: User, as: 'user', attributes: ['id', 'childName'] },
+        { model: Pronunciation, as: 'pronunciation', attributes: ['id', 'audioUrl', 'language'] }
+      ]
+    });
+
+    if (!item) {
+      return res.status(HttpStatus.NOT_FOUND).json({
+        success: false,
+        message: 'Item not found'
+      });
+    }
+
+    return res.status(HttpStatus.OK).json({
+      success: true,
+      message: 'Item retrieved successfully',
+      data: item
+    });
+  } catch (error) {
+    console.error('Get item error:', error);
+    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Failed to retrieve item',
+      error: error.message
+    });
+  }
+};
+
+module.exports = itemController;

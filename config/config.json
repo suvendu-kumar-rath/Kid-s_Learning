@@ -1,0 +1,23 @@
+{
+  "development": {
+    "username": "root",
+    "password": null,
+    "database": "cohopers",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  },
+  "test": {
+    "username": "root",
+    "password": null,
+    "database": "cohopers_test",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  },
+   "production": {
+    "username": "admin",
+    "password": "Admin123",
+    "database": "cohopers",
+    "host": "database-1.chg2yskoaryc.ap-south-1.rds.amazonaws.com",
+    "dialect": "mysql"
+  }
+}
