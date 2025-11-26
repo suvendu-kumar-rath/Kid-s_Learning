@@ -46,7 +46,7 @@ authController.register = async (req, res) => {
       { expiresIn: '30d' }
     );
 
-    // Remove password from response
+   // Remove password from response
     const userResponse = newUser.toJSON();
     delete userResponse.password;
 

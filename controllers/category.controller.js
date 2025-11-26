@@ -1,4 +1,4 @@
-const { Category, LearningImage, Pronunciation } = require("../model");
+const { Category, LearningItem, Pronunciation } = require("../model");
 const HttpStatus = require("../enums/httpStatusCode.enum");
 const ResponseMessages = require("../enums/responseMessages.enum");
 
@@ -10,9 +10,9 @@ categoryController.getAllCategories = async (req, res) => {
     const categories = await Category.findAll({
       include: [
         {
-          model: LearningImage,
-          as: "images",
-          attributes: ["id", "name", "imagePath"],
+          model: require("../model").LearningItem,
+          as: "items",
+          attributes: ["id", "itemName", "imageUrl"],
         },
       ],
       order: [["createdAt", "DESC"]],
@@ -35,7 +35,7 @@ categoryController.getAllCategories = async (req, res) => {
   }
 };
 
-// Get category by ID with all images and pronunciations
+// Get category by ID with all items and pronunciations
 categoryController.getCategoryById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -43,12 +43,12 @@ categoryController.getCategoryById = async (req, res) => {
     const category = await Category.findByPk(id, {
       include: [
         {
-          model: LearningImage,
-          as: "images",
+          model: require("../model").LearningItem,
+          as: "items",
           include: [
             {
               model: Pronunciation,
-              as: "pronunciations",
+              as: "pronunciation",
             },
           ],
         },

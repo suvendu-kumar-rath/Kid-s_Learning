@@ -10,6 +10,7 @@ require("./model");
 // Import routes
 const authRoutes = require("./routes/auth.routes");
 const itemRoutes = require("./routes/image.routes");
+const categoryRoutes = require("./routes/category.routes")
 
 // Import seeder
 const seedDefaultData = require("./seeders/default-seeder");
@@ -28,7 +29,7 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/items", itemRoutes);
-
+app.use("/api/categories",categoryRoutes);
 // Health check route
 app.get("/health", (req, res) => {
   res.json({ success: true, message: "Server is running" });
