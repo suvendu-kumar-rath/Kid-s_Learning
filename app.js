@@ -3,6 +3,7 @@ require("dotenv").config();
 const path = require("path");
 const sequelize = require("./config/db");
 const responseMiddleware = require("./middlewares/response.middleware");
+const cors =require("cors");
 
 // Import models
 require("./model");
@@ -17,6 +18,14 @@ const seedDefaultData = require("./seeders/default-seeder");
 
 const app = express();
 const PORT = process.env.APP_PORT || 3000;
+
+// CORS configuration .................
+app.use(cors({
+  origin: '*', // Allow all origins, or specify allowed origins
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));    
 
 // Middleware
 app.use(express.json());
