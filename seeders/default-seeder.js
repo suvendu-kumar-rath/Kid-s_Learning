@@ -1,4 +1,4 @@
-const { Category, LearningImage, Pronunciation } = require("../model");
+const { Category, LearningItem, Pronunciation } = require("../model");
 
 async function seedDefaultData() {
   try {
@@ -56,7 +56,7 @@ async function seedDefaultData() {
 
     // Create images and pronunciations
     for (const imageData of animalImages) {
-      const image = await LearningImage.create({
+      const image = await LearningItem.create({
         categoryId: imageData.categoryId,
         name: imageData.name,
         description: `Learn the word: ${imageData.name}`,

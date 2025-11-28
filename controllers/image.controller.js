@@ -1,4 +1,5 @@
 const { LearningItem, Category, User, Pronunciation } = require("../model");
+const { Op } = require('sequelize');
 const HttpStatus = require("../enums/httpStatusCode.enum");
 
 const itemController = {};
@@ -12,6 +13,7 @@ itemController.createItem = async (req, res) => {
     const itemName = req.body.name || req.body.itemName;
     const description = req.body.description || null;
     const userId = req.user && req.user.id;
+    const isAdmin = req.user && req.user.role === 'admin';
 
     // Validate inputs
     if (!categoryName || !itemName) {
@@ -21,10 +23,9 @@ itemController.createItem = async (req, res) => {
       });
     }
 
-    // Resolve or create category by name (case-insensitive)
     let category = await Category.findOne({ where: { name: categoryName } });
     if (!category) {
-      category = await Category.create({ name: categoryName });
+      category = await Category.create({ name: categoryName, isDefault: !!isAdmin });
     }
 
     // Support multiple upload field names for photo and voice
@@ -52,12 +53,13 @@ itemController.createItem = async (req, res) => {
 
     // Create learning item
     const newItem = await LearningItem.create({
-      userId: userId || null,
+      userId: isAdmin ? null : userId,
       categoryId: category.id,
       itemName,
       imageUrl,
       voiceUrl,
-      description
+      description,
+      isPublic: !!isAdmin
     });
 
     // Fetch the created item with associations
@@ -87,6 +89,7 @@ itemController.createItem = async (req, res) => {
 itemController.getItemsByCategory = async (req, res) => {
   try {
     const { categoryId } = req.params;
+    const userId = req.user && req.user.id;
 
     // Validate category exists
     const category = await Category.findByPk(categoryId);
@@ -98,8 +101,12 @@ itemController.getItemsByCategory = async (req, res) => {
     }
 
     // Get all items in this category
+    const where = userId
+      ? { categoryId, [Op.or]: [{ isPublic: true }, { userId }] }
+      : { categoryId, isPublic: true };
+
     const items = await LearningItem.findAll({
-      where: { categoryId },
+      where,
       include: [
         { model: Category, as: 'category', attributes: ['id', 'name'] },
         { model: User, as: 'user', attributes: ['id', 'childName'] }
@@ -128,7 +135,7 @@ itemController.getMyItems = async (req, res) => {
     const userId = req.user.id;
 
     const items = await LearningItem.findAll({
-      where: { userId },
+      where: { userId, isPublic: false },
       include: [
         { model: Category, as: 'category', attributes: ['id', 'name'] }
       ],

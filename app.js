@@ -6,7 +6,7 @@ const responseMiddleware = require("./middlewares/response.middleware");
 const cors =require("cors");
 
 // Import models
-require("./model");
+const models = require("./model");
 
 // Import routes
 const authRoutes = require("./routes/auth.routes");
@@ -39,11 +39,6 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/auth", authRoutes);
 app.use("/api/items", itemRoutes);
 app.use("/api/categories",categoryRoutes);
-// Health check route
-app.get("/health", (req, res) => {
-  res.json({ success: true, message: "Server is running" });
-});
-
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ success: false, message: "Route not found" });
@@ -62,8 +57,10 @@ async function startServer() {
     await sequelize.authenticate();
     console.log("Database connection established successfully.");
 
-    // Sync models
-    await sequelize.sync({ alter: false });
+    await sequelize.sync({ alter: true });
+    if (models && models.LearningItem) {
+      await models.LearningItem.sync({ alter: true });
+    }
     console.log("All models were synchronized successfully.");
 
     // Seed default data

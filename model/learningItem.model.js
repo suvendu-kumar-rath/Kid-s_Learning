@@ -9,7 +9,7 @@ const LearningItem = sequelize.define('LearningItem', {
   },
   userId: {
     type: DataTypes.INTEGER,
-    allowNull: false,
+    allowNull: true,
     references: {
       model: 'users',
       key: 'id'
@@ -38,6 +38,11 @@ const LearningItem = sequelize.define('LearningItem', {
   description: {
     type: DataTypes.TEXT,
     allowNull: true
+  }
+  ,
+  isPublic: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   }
 }, {
   tableName: 'learning_items',
