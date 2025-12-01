@@ -2,30 +2,71 @@
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    // Make userId nullable and set ON DELETE to SET NULL to avoid insert failures
+    // Remove any existing foreign key constraint on userId, then change column and re-add FK
+    const [[fkRow]] = await queryInterface.sequelize.query(
+      `SELECT CONSTRAINT_NAME as constraintName
+       FROM information_schema.KEY_COLUMN_USAGE
+       WHERE TABLE_SCHEMA = DATABASE()
+         AND TABLE_NAME = 'learning_items'
+         AND COLUMN_NAME = 'userId'
+         AND REFERENCED_TABLE_NAME = 'users'
+       LIMIT 1;`
+    );
+
+    if (fkRow && fkRow.constraintName) {
+      try {
+        await queryInterface.removeConstraint('learning_items', fkRow.constraintName);
+      } catch (err) {
+        // ignore if cannot remove
+        console.warn('Could not remove existing FK constraint', fkRow.constraintName, err.message);
+      }
+    }
+
+    // Change column to allow NULL
     await queryInterface.changeColumn('learning_items', 'userId', {
       type: Sequelize.INTEGER,
-      allowNull: true,
+      allowNull: true
+    });
+
+    // Recreate foreign key with ON DELETE SET NULL
+    await queryInterface.addConstraint('learning_items', {
+      fields: ['userId'],
+      type: 'foreign key',
+      name: 'fk_learning_items_userId_users_id',
       references: {
-        model: 'users',
-        key: 'id'
+        table: 'users',
+        field: 'id'
       },
-      onUpdate: 'CASCADE',
-      onDelete: 'SET NULL'
+      onDelete: 'SET NULL',
+      onUpdate: 'CASCADE'
     });
   },
 
   down: async (queryInterface, Sequelize) => {
-    // Revert to NOT NULL and ON DELETE CASCADE (original behaviour)
+    // Remove our FK if present
+    try {
+      await queryInterface.removeConstraint('learning_items', 'fk_learning_items_userId_users_id');
+    } catch (e) {
+      // ignore
+    }
+
+    // Change column back to NOT NULL
     await queryInterface.changeColumn('learning_items', 'userId', {
       type: Sequelize.INTEGER,
-      allowNull: false,
+      allowNull: false
+    });
+
+    // Recreate original FK with ON DELETE CASCADE
+    await queryInterface.addConstraint('learning_items', {
+      fields: ['userId'],
+      type: 'foreign key',
+      name: 'fk_learning_items_userId_users_id',
       references: {
-        model: 'users',
-        key: 'id'
+        table: 'users',
+        field: 'id'
       },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE'
+      onDelete: 'CASCADE',
+      onUpdate: 'CASCADE'
     });
   }
 };
