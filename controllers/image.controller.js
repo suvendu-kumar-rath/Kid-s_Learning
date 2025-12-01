@@ -12,7 +12,15 @@ itemController.createItem = async (req, res) => {
     const categoryName = req.body.category || req.body.categoryName;
     const itemName = req.body.name || req.body.itemName;
     const description = req.body.description || null;
-    const userId = req.user && req.user.id;
+    let userId = req.user && req.user.id;
+
+    // Verify user exists; if not, store as null to avoid FK constraint errors
+    if (userId) {
+      const existingUser = await User.findByPk(userId);
+      if (!existingUser) {
+        userId = null;
+      }
+    }
     const isAdmin = req.user && req.user.role === 'admin';
 
     // Validate inputs

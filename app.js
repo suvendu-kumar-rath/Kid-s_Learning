@@ -57,7 +57,7 @@ async function startServer() {
     await sequelize.authenticate();
     console.log("Database connection established successfully.");
 
-    await sequelize.sync({ alter: true });
+    await sequelize.sync({ alter: false });
     if (models && models.LearningItem) {
       await models.LearningItem.sync({ alter: true });
     }
