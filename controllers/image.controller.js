@@ -51,12 +51,12 @@ itemController.createItem = async (req, res) => {
 
     // Build URLs from uploaded files (use first file if array)
     const imageFile = Array.isArray(photoFiles) ? photoFiles[0] : photoFiles;
-    const imageUrl = `/uploads/images/${imageFile.filename}`;
+    const imageUrl = `/uploads/learning-items/${imageFile.filename}`;
 
     let voiceUrl = null;
     if (voiceFiles && (Array.isArray(voiceFiles) ? voiceFiles.length > 0 : true)) {
       const voiceFile = Array.isArray(voiceFiles) ? voiceFiles[0] : voiceFiles;
-      voiceUrl = `/uploads/voice/${voiceFile.filename}`;
+      voiceUrl = `/uploads/learning-items/${voiceFile.filename}`;
     }
 
     // Create learning item
