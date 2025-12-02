@@ -200,4 +200,79 @@ itemController.getItemById = async (req, res) => {
   }
 };
 
+// Update an existing learning item (owner or admin)
+itemController.updateItem = async (req, res) => {
+  try {
+    const { itemId } = req.params;
+    const requesterId = req.user && req.user.id;
+    const isAdmin = req.user && (req.user.role === 'admin' || req.user.isAdmin === true);
+
+    const item = await LearningItem.findByPk(itemId);
+    if (!item) {
+      return res.status(HttpStatus.NOT_FOUND).json({ success: false, message: 'Item not found' });
+    }
+
+    // Authorization: owner or admin
+    if (!isAdmin && requesterId && item.userId && parseInt(requesterId, 10) !== parseInt(item.userId, 10)) {
+      return res.status(HttpStatus.FORBIDDEN).json({ success: false, message: 'Not authorized to update this item' });
+    }
+
+    // Accept flexible inputs for category/name/description
+    const categoryName = req.body.category || req.body.categoryName;
+    const categoryId = req.body.categoryId || null;
+    const itemName = req.body.name || req.body.itemName || item.itemName;
+    const description = req.body.description !== undefined ? req.body.description : item.description;
+
+    // Resolve or create category if provided
+    let newCategoryId = item.categoryId;
+    if (categoryId) {
+      const existingCategory = await Category.findByPk(categoryId);
+      if (!existingCategory) {
+        return res.status(HttpStatus.BAD_REQUEST).json({ success: false, message: 'Provided categoryId does not exist' });
+      }
+      newCategoryId = existingCategory.id;
+    } else if (categoryName) {
+      let category = await Category.findOne({ where: { name: categoryName } });
+      if (!category) {
+        category = await Category.create({ name: categoryName });
+      }
+      newCategoryId = category.id;
+    }
+
+    // Handle uploaded files
+    const files = req.files || {};
+    const photoFiles = files.photo || files.image || files.photoImage || null;
+    const voiceFiles = files.voice || files.record || files.audio || null;
+
+    if (photoFiles && (Array.isArray(photoFiles) ? photoFiles.length > 0 : true)) {
+      const imageFile = Array.isArray(photoFiles) ? photoFiles[0] : photoFiles;
+      item.imageUrl = `/uploads/images/${imageFile.filename}`;
+    }
+
+    if (voiceFiles && (Array.isArray(voiceFiles) ? voiceFiles.length > 0 : true)) {
+      const voiceFile = Array.isArray(voiceFiles) ? voiceFiles[0] : voiceFiles;
+      item.voiceUrl = `/uploads/voice/${voiceFile.filename}`;
+    }
+
+    // Update fields
+    item.itemName = itemName;
+    item.description = description;
+    item.categoryId = newCategoryId;
+
+    await item.save();
+
+    const updated = await LearningItem.findByPk(item.id, {
+      include: [
+        { model: Category, as: 'category', attributes: ['id', 'name'] },
+        { model: User, as: 'user', attributes: ['id', 'childName'] }
+      ]
+    });
+
+    return res.status(HttpStatus.OK).json({ success: true, message: 'Item updated successfully', data: updated });
+  } catch (error) {
+    console.error('Update item error:', error);
+    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to update item', error: error.message });
+  }
+};
+
 module.exports = itemController;

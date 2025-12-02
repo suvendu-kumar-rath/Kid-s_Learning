@@ -16,8 +16,16 @@ router.post(
   itemController.createItem
 );
 
-// Get items by category
-router.get('/category/:categoryId', optionalAuth, itemController.getItemsByCategory);
+// Update learning item (user or admin)
+router.put(
+  '/:itemId',
+  authMiddleware,
+  upload('learning-items').fields([
+    { name: 'image', maxCount: 1 },
+    { name: 'voice', maxCount: 1 }
+  ]),
+  itemController.updateItem
+);
 
 // Get my items (requires auth)
 router.get('/my-items', authMiddleware, itemController.getMyItems);
