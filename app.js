@@ -59,7 +59,7 @@ async function startServer() {
 
     await sequelize.sync({ alter: false });
     if (models && models.LearningItem) {
-      await models.LearningItem.sync({ alter: true });
+      await models.LearningItem.sync({ alter: false });
     }
     console.log("All models were synchronized successfully.");
 

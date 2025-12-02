@@ -1,4 +1,4 @@
-const { Category, LearningItem, Pronunciation } = require("../model");
+const { Category, LearningItem, } = require("../model");
 const HttpStatus = require("../enums/httpStatusCode.enum");
 const ResponseMessages = require("../enums/responseMessages.enum");
 
@@ -43,16 +43,11 @@ categoryController.getCategoryById = async (req, res) => {
     const category = await Category.findByPk(id, {
       include: [
         {
-          model: require("../model").LearningItem,
-          as: "items",
-          include: [
-            {
-              model: Pronunciation,
-              as: "pronunciation",
-            },
-          ],
-        },
-      ],
+          model: LearningItem,
+          as: 'items',
+          attributes: ['id', 'itemName', 'imageUrl', 'voiceUrl', 'description', 'isPublic', 'userId']
+        }
+      ]
     });
 
     if (!category) {
