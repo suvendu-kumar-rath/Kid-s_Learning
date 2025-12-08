@@ -33,4 +33,5 @@ router.get('/my-items', authMiddleware, itemController.getMyItems);
 // Get single item
 router.get('/:itemId', itemController.getItemById);
 
+
 module.exports = router;

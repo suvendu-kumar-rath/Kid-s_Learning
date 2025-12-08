@@ -1,4 +1,4 @@
-const { LearningItem, Category, User, Pronunciation } = require("../model");
+const { LearningItem, Category, User } = require("../model");
 const { Op } = require('sequelize');
 const HttpStatus = require("../enums/httpStatusCode.enum");
 
@@ -141,7 +141,6 @@ itemController.getItemsByCategory = async (req, res) => {
 itemController.getMyItems = async (req, res) => {
   try {
     const userId = req.user.id;
-
     const items = await LearningItem.findAll({
       where: { userId, isPublic: false },
       include: [
@@ -246,12 +245,12 @@ itemController.updateItem = async (req, res) => {
 
     if (photoFiles && (Array.isArray(photoFiles) ? photoFiles.length > 0 : true)) {
       const imageFile = Array.isArray(photoFiles) ? photoFiles[0] : photoFiles;
-      item.imageUrl = `/uploads/images/${imageFile.filename}`;
+      item.imageUrl = `/uploads/learning-items/${imageFile.filename}`;
     }
 
     if (voiceFiles && (Array.isArray(voiceFiles) ? voiceFiles.length > 0 : true)) {
       const voiceFile = Array.isArray(voiceFiles) ? voiceFiles[0] : voiceFiles;
-      item.voiceUrl = `/uploads/voice/${voiceFile.filename}`;
+      item.voiceUrl = `/uploads/learning-items/${voiceFile.filename}`;
     }
 
     // Update fields
